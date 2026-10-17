@@ -558,6 +558,29 @@ server action
   drawn `IconBackspace` SVG in `components/icons.tsx`; `KeyBtn` now forwards
   extra button props (e.g. `aria-label="Backspace"`).
 
+- **"Review bar nav ke peeche chhup gayi" (2026-10-18).** The redesigned guest
+  bottom nav grew taller (icon chip + pill layout ≈ 5 rem + safe-area), but the
+  floating cart bar still used the old `bottom-16` (64 px) offset — on the
+  user's phone the "Review" button was half hidden behind the nav. Fix: the bar
+  is now pinned at `bottom-[calc(5.5rem+env(safe-area-inset-bottom))]`, i.e.
+  nav height + margin at every inset. Verified: bar bottom 827 px vs nav top
+  832 px (5 px clear) at 412×915. **Rule: after any change to fixed bottom
+  chrome (nav, safe-bottom, cart bar), re-measure the pair together.**
+
+- **"Order is not being placed — it just says sent for approval" (mirage,
+  2026-10-18).** A user of the app read the counter-approval step as an error.
+  It is the designed flow (admin approval before tickets). Reproduced
+  end-to-end headless with real taps: guest adds 3 items → Review sheet →
+  "Send order for approval" → order #1006 `pending` with the amber
+  "Waiting for counter approval…" banner → cashier `/admin` shows
+  "Awaiting approval 1" → **Approve & send** → order → `approved`,
+  kitchen ticket `approved`, guest's Orders tab shows the green
+  Approved→Preparing→Ready→Served tracker. The Review sheet itself also states
+  the rule, and the pending banner now adds a one-line explainer. **Do not
+  reinterpret guest confusion here as a submission bug** — verify with the
+  counter first. Test session (order #1006 + bill chain) was fully deleted
+  afterwards; **0 open sessions** remain.
+
 - **Design refresh (2026-10-18, "flat/boring UI" request).** Central levers only
   — the component structure is untouched: `app/globals.css` adds warm elevation
   shadow tokens (`shadow-card/lift/pop/sheet`), the `.brand-band` gradient

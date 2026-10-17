@@ -313,9 +313,9 @@ export function CustomerApp({
         ) : null}
       </div>
 
-      {/* Cart bar */}
+      {/* Cart bar — sits exactly above the bottom nav: nav ≈ 5rem tall + safe-area */}
       {cartCount > 0 && tab === "menu" ? (
-        <div className="fixed left-0 right-0 bottom-16 z-30 px-4">
+        <div className="fixed left-0 right-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-30 px-4">
           <button
             onClick={() => setReviewOpen(true)}
             className="brand-cta sheet-up mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-2xl text-white px-4 py-3 shadow-pop active:scale-[0.98] transition-transform"
@@ -651,7 +651,15 @@ function StatusTracker({
     );
   }
   if (order.status === "pending") {
-    return <Banner tone="amber">Waiting for counter approval…</Banner>;
+    return (
+      <div className="space-y-1">
+        <Banner tone="amber">Waiting for counter approval…</Banner>
+        <p className="text-[11px] text-muted px-1">
+          Your order is in. Once the counter confirms it, the kitchen starts
+          cooking — the bill tab shows every round as it lands.
+        </p>
+      </div>
+    );
   }
 
   const steps = ["Approved", "Preparing", "Ready", "Served"];
