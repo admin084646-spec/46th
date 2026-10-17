@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Mittal's Shudh Shakahari Bhojanalaya — warm, vegetarian-friendly palette
+--------------------------------------------------------------------------- */
+:root {
+  --background: #fbf7f0;
+  --surface: #ffffff;
+  --surface-2: #f5eee3;
+  --ink: #211d18;
+  --muted: #6e655a;
+  --border: #e8ddcb;
+  --brand: #c2410c;
+  --brand-strong: #9a3412;
+  --brand-soft: #fdeadd;
+  --green: #15803d;
+  --green-soft: #dcfce7;
+  --amber: #b45309;
+  --amber-soft: #fef3c7;
+  --red: #b91c1c;
+  --red-soft: #fee2e2;
+  --blue: #1d4ed8;
+  --blue-soft: #dbeafe;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-green: var(--green);
+  --color-green-soft: var(--green-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * The viewport must stay the ONLY vertical scroller.
+ *
+ * The old rule put `max-width: 100vw` + `overflow-x: hidden` on BOTH html and
+ * body. `overflow-x: hidden` on the body turns the body into a second scroll
+ * container (its vertical axis computes to `auto`); together with
+ * `html { height: 100% }` nobody ends up scrolling the page on real devices —
+ * mouse wheel on a laptop and touch swipe on a phone both do nothing. That is
+ * the classic "the page won't scroll" trap.
+ *
+ * `overflow-x: clip` on the body alone still stops sideways bleed, but it does
+ * NOT create a scroll container and does not touch the vertical axis, so page
+ * scrolling stays with the viewport. `max-width: 100%` replaces `100vw`
+ * because `100vw` includes the desktop scrollbar width and is itself a source
+ * of horizontal overflow.
+ */
+body {
+  max-width: 100%;
+  overflow-x: clip;
+  background: var(--background);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* text never silently overflows */
+h1, h2, h3, h4, p, span, label, div {
+  overflow-wrap: anywhere;
+}
+
+/* keep focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* scroll containers that must never force page-level horizontal scroll */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* hide number input spinners (qty fields) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+/* subtle entrance for toasts/sheets */
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pop-in { animation: pop-in 0.16s ease-out; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+  a[href]::after { content: none !important; }
+}
