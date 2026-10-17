@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button, Banner } from "@/components/ui";
-import { IconLock } from "@/components/icons";
+import { IconLock, IconBackspace } from "@/components/icons";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -75,8 +75,8 @@ export function LoginForm({ error }: { error?: string | null }) {
           Clear
         </KeyBtn>
         <KeyBtn onClick={() => press("0")}>0</KeyBtn>
-        <KeyBtn onClick={back} subtle>
-          ⌫
+        <KeyBtn onClick={back} subtle aria-label="Backspace">
+          <IconBackspace size={22} className="mx-auto" />
         </KeyBtn>
       </div>
 
@@ -92,13 +92,11 @@ function KeyBtn({
   children,
   onClick,
   subtle,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  subtle?: boolean;
-}) {
+  ...rest
+}: React.ComponentProps<"button"> & { subtle?: boolean }) {
   return (
     <button
+      {...rest}
       type="button"
       onClick={onClick}
       className={

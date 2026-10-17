@@ -56,12 +56,12 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-3xl sm:rounded-2xl bg-surface shadow-xl pop-in",
+          "relative w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-[20px] sm:rounded-2xl bg-surface shadow-sheet sheet-up",
           className
         )}
       >
-        <div className="sticky top-0 z-10 bg-surface border-b border-border px-4 py-3 flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-ink truncate">{title}</h3>
+        <div className="frost sticky top-0 z-10 border-b border-border px-4 py-3 flex items-center justify-between gap-3">
+          <h3 className="font-bold text-[15px] text-ink truncate">{title}</h3>
           <button
             onClick={onClose}
             className="h-9 w-9 shrink-0 inline-flex items-center justify-center rounded-lg hover:bg-surface-2"

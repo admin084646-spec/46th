@@ -19,13 +19,13 @@ export function StaffHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border no-print">
-      <div className="mx-auto w-full max-w-3xl px-4 py-3 flex items-center justify-between gap-3">
+    <header className="brand-band sticky top-0 z-20 border-b border-brand-strong/40 shadow-[0_2px_10px_rgba(127,42,13,0.25)] no-print">
+      <div className="mx-auto w-full max-w-3xl px-4 py-3.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wide text-muted">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">
             {ROLE_LABEL[staff.role]} · {staff.name}
           </p>
-          <h1 className="font-semibold text-ink truncate">
+          <h1 className="text-lg font-bold text-white truncate">
             {title ?? "Mittal's Shudh Shakahari"}
           </h1>
         </div>
@@ -34,7 +34,7 @@ export function StaffHeader({
           <form action="/api/logout" method="post">
             <button
               type="submit"
-              className="h-10 w-10 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-muted"
+              className="grid h-10 w-10 place-items-center rounded-xl bg-white/12 text-white transition hover:bg-white/20 active:scale-95"
               aria-label="Sign out"
             >
               <IconLogout size={18} />

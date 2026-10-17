@@ -137,3 +137,12 @@ export const IconChevronRight = ({ size, className }: IconProps) => (
     <path d="M9 6l6 6-6 6" />
   </svg>
 );
+
+/** Backspace (delete-left) — used on the PIN keypad. Drawn as SVG so no font
+ *  has to supply the ⌫ glyph (Poppins does not ship it; tofu boxes look broken). */
+export const IconBackspace = ({ size, className }: IconProps) => (
+  <svg {...base(size, className)}>
+    <path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z" />
+    <path d="m12 9 6 6M18 9l-6 6" />
+  </svg>
+);

@@ -6,10 +6,10 @@
 :root {
   --background: #fbf7f0;
   --surface: #ffffff;
-  --surface-2: #f5eee3;
+  --surface-2: #f3ebdd;
   --ink: #211d18;
   --muted: #6e655a;
-  --border: #e8ddcb;
+  --border: #e6dac6;
   --brand: #c2410c;
   --brand-strong: #9a3412;
   --brand-soft: #fdeadd;
@@ -42,6 +42,21 @@
   --color-blue: var(--blue);
   --color-blue-soft: var(--blue-soft);
   --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+
+  /* Warm elevation — small pops bounded at 8px blur, never ghost-card pairs */
+  --shadow-card: 0 2px 8px rgba(33, 29, 24, 0.06), 0 1px 2px rgba(33, 29, 24, 0.05);
+  --shadow-lift: 0 3px 10px rgba(33, 29, 24, 0.07), 0 1px 3px rgba(33, 29, 24, 0.05);
+  --shadow-pop: 0 5px 14px rgba(154, 52, 18, 0.24), 0 2px 6px rgba(33, 29, 24, 0.10);
+  --shadow-sheet: 0 -10px 28px rgba(33, 29, 24, 0.12);
+}
+
+/* Instant taps on touch screens: `touch-action: manipulation` disables the
+   legacy double-tap-zoom pause that makes mobile taps feel ~300ms late.
+   Every button and link in the app is a quick, single-purpose control. */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
 }
 
 * {
@@ -67,7 +82,9 @@
 body {
   max-width: 100%;
   overflow-x: clip;
-  background: var(--background);
+  background:
+    radial-gradient(1100px 420px at 50% -140px, rgba(253, 227, 205, 0.5), transparent 72%),
+    var(--background);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -79,10 +96,17 @@ h1, h2, h3, h4, p, span, label, div {
   overflow-wrap: anywhere;
 }
 
+/* quieter, balanced headings — hierarchy conveyed by weight and size */
+h1, h2, h3 {
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
 /* keep focus visible for accessibility */
 :focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* scroll containers that must never force page-level horizontal scroll */
@@ -90,6 +114,28 @@ h1, h2, h3, h4, p, span, label, div {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+
+/* ---- committed brand surfaces -------------------------------------------
+   `.brand-band` carries identity: staff/customer headers. Dark end sits
+   where small text lives so white-on-brand still clears 4.5:1.
+--------------------------------------------------------------------------- */
+.brand-band {
+  background-image: linear-gradient(115deg, #7f2a0d 0%, #9a3412 48%, #b8431a 100%);
+  color: #fff;
+}
+
+.brand-cta {
+  background-image: linear-gradient(160deg, var(--brand) 0%, var(--brand-strong) 100%);
+}
+
+/* frosted chrome for bottom bars — one purposeful use of glass */
+.frost {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
 }
 
 /* hide number input spinners (qty fields) */
@@ -111,7 +157,21 @@ input[type="number"] {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.pop-in { animation: pop-in 0.16s ease-out; }
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pop-in { animation: pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+.sheet-up { animation: sheet-up 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* motion is a courtesy, never a requirement */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 @media print {
   .no-print { display: none !important; }

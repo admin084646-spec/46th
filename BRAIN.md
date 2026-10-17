@@ -530,6 +530,47 @@ server action
   correct — while a sheet is open the body lock is *expected*; the trap was
   that the sheet could not be seen or closed.
 
+- **"Admin bottom nav tap par der se react karta hai" (2026-10-18).**
+  Three stacked causes, all fixed the same day:
+  1. **No instant feedback.** Staff pages are `force-dynamic` server components
+     (up to 3 Supabase queries per navigation) and `usePathname()` flips only
+     after the RSC payload lands, so the tap highlight moved ~0.5–1.5 s late.
+     Fix: `components/staff-nav.tsx` keeps an **optimistic** `tapped` state set
+     in `onClick` (cleared when the real pathname catches up, or after 4 s),
+     so the highlight lands the same frame the finger lifts. Measured:
+     `data-active` flips in **10 ms**, route swap visible at **46 ms**
+     (previously: after the DB round trip).
+  2. **Nothing to show while the segment streams.** Without `loading.tsx`,
+     dynamic routes are not prefetched at all and the old screen froze.
+     Fix: `app/{admin,kitchen,waiter,owner}/loading.tsx` +
+     `components/staff-skeleton.tsx` (brand-band shimmer header, stat/panel
+     placeholders, and the **real `StaffNav`** so the bar never disappears).
+     `prefetch` then caches the loading boundary (verified: skeleton seen
+     mid-navigation).
+  3. **Legacy touch delay.** `touch-action: manipulation` is now applied to
+     `button, a, [role="button"]` in `globals.css`, disabling the
+     double-tap-zoom pause that makes taps feel ~300 ms late.
+  Regression guards re-run after the UI pass: guest swipe **718 px**, guest
+  modal full-viewport (915 px) with lock restore, **0 page errors**.
+
+- **PIN keypad `⌫` rendered as a tofu box (2026-10-18).** Poppins does not ship
+  U+232B, so the backspace key showed a broken-glyph rectangle. Replaced with a
+  drawn `IconBackspace` SVG in `components/icons.tsx`; `KeyBtn` now forwards
+  extra button props (e.g. `aria-label="Backspace"`).
+
+- **Design refresh (2026-10-18, "flat/boring UI" request).** Central levers only
+  — the component structure is untouched: `app/globals.css` adds warm elevation
+  shadow tokens (`shadow-card/lift/pop/sheet`), the `.brand-band` gradient
+  identity surface (dark end ≥ #7f2a0d so white small text keeps ≥4.5:1), the
+  `.brand-cta` gradient, `.frost` frosted bottom bars, a subtle canvas wash,
+  balanced headings, and `prefers-reduced-motion` protection;
+  `components/ui.tsx` primitives upgraded (gradient primary Button, dotted
+  Badge, bolder Stat/EmptyState/Input focus ring). Every staff/customer header
+  now uses `.brand-band`; landing and login got a monogram hero with the green
+  Shudh mark. **Guard kept**: `modal.tsx` still portals to `document.body` —
+  do not re-nest it under any `backdrop-blur` ancestor; `.frost` bars contain
+  no fixed children.
+
 ### Environment quirks
 
 - PGlite (used to verify the SQL) lacks `pgcrypto`; the harness strips only
@@ -624,6 +665,25 @@ server action
   - Test residue cleaned afterwards: 1 leftover active session + its 1 service
     request deleted; **0 open sessions** remain.
 
+- **2026-10-18 nav-lag + design refresh pass** `[VERIFIED]` against a fresh
+  production build (`tsc` 0, `pnpm build` 0, `pnpm start -H 0.0.0.0 -p 3000`),
+  real headless Chromium:
+  - **Nav responsiveness**: tapping "Tables" in the admin bottom nav →
+    optimistic `data-active` highlight in **10 ms**, route swap at **46 ms**,
+    final path `/admin/tables`; skeleton boundary (`main[aria-busy]`) observed
+    mid-navigation.
+  - **Design/GitHub baseline pushed**: `main → origin/main` at
+    `github.com/admin084646-spec/46th` (commit `2924f1d`, no secrets —
+    `.env.local` excluded by `.gitignore`).
+  - **Regression guards after the redesign**: guest finger swipe **718 px**;
+    guest-name modal wrapper full viewport (915 px, `top: 0`) with body lock
+    restored to "(none)" on close; landing `.brand-band` computes
+    `linear-gradient`; login backspace renders the SVG icon
+    (`stillTofuGlyph: false`); screenshots taken of landing, login, guest menu,
+    admin, admin/menu, kitchen, owner; **0 console page errors** on desktop and
+    mobile contexts.
+  - Screenshots (for reference): `%TEMP%\opencode\ui-*.png`.
+
 **What has NOT been verified** — do not claim otherwise
 
 - ❌ **No automated tests exist.** There is no unit/integration/e2e suite.
@@ -647,6 +707,9 @@ server action
 | Simplified | **2026-10-14** — shifts, attendance (in/out) and refunds removed at the owner's request; owner reports keep **daily sales** |
 | Security | **2026-10-15** — staff cookie is now a **session** cookie (24 h JWT, no `maxAge`); `/` no longer offers a PIN-free "Continue as {name}" shortcut; `/login` never auto-redirects a signed-in user; the demo PIN list was removed from the login screen |
 | Scrolling + modals | **2026-10-17** — `app/globals.css` no longer puts `overflow-x: hidden` on html+body (body becomes a dead scroll container); `components/modal.tsx` portals to `document.body` so no `backdrop-blur` ancestor hijacks `position: fixed`. Both reproduced and verified — see §13/§14 |
+| Bottom-nav responsiveness | **2026-10-18** — optimistic tap highlight (10 ms) + per-workspace `loading.tsx` skeletons + `touch-action: manipulation`; verified in headless Chromium |
+| UI design | **2026-10-18** — brand gradient bands on all headers, frosted bottom bars with active pills, warm elevation shadows, refreshed landing/login heroes with the green Shudh mark; structure/tokens preserved, modal portal kept |
+| Version control | **2026-10-18** — local repo recreated inside the project (the drive `C:\` was previously a zero-commit repo); pushed to `github.com/admin084646-spec/46th` `main` (`2924f1d`), `.env.local` never committed |
 | Blocker | **None** — mobile login fixed and verified; guest join verified in a real browser |
 | Outstanding risk | Zero automated tests; still no real-device (phone camera) verification |
 

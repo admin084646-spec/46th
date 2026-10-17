@@ -255,12 +255,14 @@ export function CustomerApp({
   return (
     <div className="mx-auto w-full max-w-md flex-1 flex flex-col pb-28">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur border-b border-border">
-        <div className="px-4 py-3 flex items-center justify-between gap-3">
+      <header className="brand-band sticky top-0 z-20 border-b border-brand-strong/40 shadow-[0_2px_10px_rgba(127,42,13,0.25)]">
+        <div className="px-4 py-3.5 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-muted">{tableLabel}</p>
-            <h1 className="font-semibold text-ink truncate">
-              Mittal&apos;s Shudh Shakahari
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70">
+              {tableLabel} · Shudh Shakahari
+            </p>
+            <h1 className="text-lg font-bold text-white truncate">
+              Mittal&apos;s Bhojanalaya
             </h1>
           </div>
           <GuestName
@@ -316,12 +318,12 @@ export function CustomerApp({
         <div className="fixed left-0 right-0 bottom-16 z-30 px-4">
           <button
             onClick={() => setReviewOpen(true)}
-            className="mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-2xl bg-brand text-white px-4 py-3 shadow-lg active:bg-brand-strong"
+            className="brand-cta sheet-up mx-auto flex w-full max-w-md items-center justify-between gap-3 rounded-2xl text-white px-4 py-3 shadow-pop active:scale-[0.98] transition-transform"
           >
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold">
               {cartCount} item{cartCount > 1 ? "s" : ""} · {formatINR(cartTotal)}
             </span>
-            <span className="text-sm font-semibold inline-flex items-center gap-1">
+            <span className="text-sm font-bold inline-flex items-center gap-1">
               Review <IconPlus size={16} />
             </span>
           </button>
@@ -329,7 +331,7 @@ export function CustomerApp({
       ) : null}
 
       {/* Bottom nav */}
-      <nav className="fixed left-0 right-0 bottom-0 z-30 border-t border-border bg-surface safe-bottom">
+      <nav className="frost fixed left-0 right-0 bottom-0 z-30 border-t border-border/70 safe-bottom">
         <div className="mx-auto flex w-full max-w-md">
           <TabButton
             active={tab === "menu"}
@@ -480,10 +482,10 @@ function MenuTab({
                 ?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
             className={cn(
-              "whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium border",
+              "whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold border active:scale-95 transition",
               active === c.id
-                ? "bg-brand text-white border-brand"
-                : "bg-surface text-muted border-border"
+                ? "brand-cta text-white border-transparent shadow-pop"
+                : "bg-surface text-muted border-border hover:text-ink"
             )}
           >
             {c.name}
@@ -507,7 +509,7 @@ function MenuTab({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-ink">
+                          <p className="text-sm font-semibold text-ink">
                             {item.name}
                           </p>
                           {!item.is_available ? (
@@ -515,21 +517,21 @@ function MenuTab({
                           ) : null}
                         </div>
                         {item.description ? (
-                          <p className="text-xs text-muted mt-0.5">
+                          <p className="text-xs text-muted mt-0.5 leading-relaxed">
                             {item.description}
                           </p>
                         ) : null}
-                        <p className="text-sm font-semibold mt-1 tabular-nums">
+                        <p className="text-sm font-bold text-brand-strong mt-1.5 tabular-nums">
                           {formatINR(item.price_minor)}
                         </p>
                       </div>
                       <div className="shrink-0">
                         {!item.is_available ? null : qty > 0 ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 rounded-xl bg-brand-soft px-1.5 py-1 shadow-[inset_0_0_0_1px_rgba(194,65,12,0.12)]">
                             <QtyBtn onClick={() => onRemove(item.id)}>
                               <IconMinus size={16} />
                             </QtyBtn>
-                            <span className="w-5 text-center text-sm font-semibold tabular-nums">
+                            <span className="w-5 text-center text-sm font-bold text-brand-strong tabular-nums">
                               {qty}
                             </span>
                             <QtyBtn onClick={() => onAdd(item.id)}>
@@ -537,7 +539,11 @@ function MenuTab({
                             </QtyBtn>
                           </div>
                         ) : (
-                          <Button size="sm" variant="subtle" onClick={() => onAdd(item.id)}>
+                          <Button
+                            size="sm"
+                            onClick={() => onAdd(item.id)}
+                            className="bg-brand-soft text-brand-strong shadow-[inset_0_0_0_1px_rgba(194,65,12,0.16)] hover:bg-brand hover:text-white active:scale-95 transition-colors"
+                          >
                             Add
                           </Button>
                         )}
@@ -906,11 +912,22 @@ function TabButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium",
+        "flex-1 flex flex-col items-center gap-1 pb-2.5 pt-2 text-[11px] font-semibold",
+        "select-none touch-manipulation transition-colors",
         active ? "text-brand" : "text-muted"
       )}
     >
-      {icon}
+      <span
+        className={cn(
+          "grid h-9 w-full max-w-[4.5rem] place-items-center rounded-xl",
+          "transition-all duration-150 ease-out active:scale-[0.94]",
+          active
+            ? "bg-brand-soft shadow-[inset_0_0_0_1px_rgba(194,65,12,0.18)]"
+            : "bg-transparent"
+        )}
+      >
+        {icon}
+      </span>
       {label}
     </button>
   );

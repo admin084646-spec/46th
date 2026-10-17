@@ -12,11 +12,11 @@ type ButtonVariant =
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand text-white hover:bg-brand-strong active:bg-brand-strong shadow-sm",
-  success: "bg-green text-white hover:brightness-95 shadow-sm",
-  danger: "bg-red text-white hover:brightness-95 shadow-sm",
+    "brand-cta text-white shadow-pop hover:brightness-[1.06] active:brightness-95",
+  success: "bg-green text-white shadow-card hover:brightness-95",
+  danger: "bg-red text-white shadow-card hover:brightness-95",
   outline:
-    "border border-border bg-surface text-ink hover:bg-surface-2",
+    "border border-border bg-surface text-ink hover:bg-surface-2 hover:border-brand/50",
   ghost: "text-ink hover:bg-surface-2",
   subtle: "bg-surface-2 text-ink hover:brightness-95 border border-border",
 };
@@ -42,7 +42,8 @@ export function Button({
     <button
       {...rest}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:opacity-50 disabled:pointer-events-none select-none",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-150 ease-out select-none",
+        "active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none",
         sizes[size],
         block && "w-full",
         VARIANTS[variant],
@@ -63,7 +64,7 @@ export function Card({
     <div
       {...rest}
       className={cn(
-        "rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(33,29,24,0.04)]",
+        "rounded-2xl border border-border/80 bg-surface shadow-card",
         className
       )}
     >
@@ -84,7 +85,7 @@ export function SectionTitle({
   return (
     <div className="flex items-end justify-between gap-3 mb-2">
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-ink truncate">{title}</h2>
+        <h2 className="text-[15px] font-bold text-ink truncate">{title}</h2>
         {subtitle ? (
           <p className="text-xs text-muted mt-0.5">{subtitle}</p>
         ) : null}
@@ -117,11 +118,16 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
         TONES[tone],
         className
       )}
     >
+      {/* state dot — same colour as the label, so never colour-only */}
+      <span
+        aria-hidden
+        className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-70"
+      />
       {children}
     </span>
   );
@@ -166,7 +172,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">
+      <span className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-1">
         {label} {required ? <span className="text-red">*</span> : null}
       </span>
       {children}
@@ -176,7 +182,9 @@ export function Field({
 }
 
 const inputBase =
-  "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-ink placeholder:text-muted/70 focus:border-brand focus:outline-none";
+  "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-ink " +
+  "placeholder:text-muted/60 shadow-[inset_0_1px_2px_rgba(33,29,24,0.04)] " +
+  "transition-colors focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none";
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputBase, props.className)} />;
@@ -213,7 +221,14 @@ export function EmptyState({
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surface-2/40 px-4 py-8 text-center">
-      <p className="text-sm font-medium text-ink">{title}</p>
+      {/* little branded breath, not an illustration */}
+      <span
+        aria-hidden
+        className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand-strong text-base"
+      >
+        ✦
+      </span>
+      <p className="text-sm font-semibold text-ink">{title}</p>
       {hint ? <p className="text-xs text-muted mt-1">{hint}</p> : null}
     </div>
   );
@@ -229,7 +244,7 @@ export function Banner({
   return (
     <div
       className={cn(
-        "rounded-xl px-3 py-2.5 text-sm",
+        "rounded-xl px-3 py-2.5 text-sm shadow-card",
         TONES[tone]
       )}
       role="status"
@@ -239,7 +254,7 @@ export function Banner({
   );
 }
 
-/** Metric tile for dashboards/reports. */
+/** Metric tile for dashboards/reports — big number, quiet label. */
 export function Stat({
   label,
   value,
@@ -253,10 +268,12 @@ export function Stat({
 }) {
   return (
     <Card className="p-3">
-      <p className="text-xs font-medium text-muted">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted">
+        {label}
+      </p>
       <p
         className={cn(
-          "text-xl font-semibold mt-1 tabular-nums",
+          "text-2xl font-bold mt-1.5 tabular-nums tracking-tight",
           tone === "green" && "text-green",
           tone === "red" && "text-red",
           tone === "brand" && "text-brand-strong",
@@ -265,7 +282,7 @@ export function Stat({
       >
         {value}
       </p>
-      {hint ? <p className="text-xs text-muted mt-0.5">{hint}</p> : null}
+      {hint ? <p className="text-[11px] text-muted mt-0.5">{hint}</p> : null}
     </Card>
   );
 }
