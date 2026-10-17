@@ -78,6 +78,16 @@ export function CustomerApp({
   const [toast, setToast] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  /* Rejoin recovery: the counter may clear the table (or the session may have
+     been removed) while this phone still holds the old cookie. Actions then
+     fail with SESSION_ENDED. Offer a one-tap rejoin instead of a dead end —
+     it re-runs the exact same join a fresh QR scan performs. */
+  const [rejoin, setRejoin] = useState<{
+    message: string;
+    retry: "order" | "service" | null;
+  } | null>(null);
+  const [rejoining, setRejoining] = useState(false);
+
   const sessionId = guest?.sessionId ?? initial?.sessionId ?? null;
   useLive(
     [sessionId ? sessionTopic(sessionId) : "", MENU_TOPIC].filter(Boolean),
@@ -195,6 +205,11 @@ export function CustomerApp({
     });
     setSubmitting(false);
     if (!res.ok) {
+      if (res.code === "SESSION_ENDED") {
+        setReviewOpen(false);
+        setRejoin({ message: res.error, retry: "order" });
+        return;
+      }
       setNotice(res.error);
       return;
     }
@@ -212,12 +227,57 @@ export function CustomerApp({
     note?: string
   ) {
     const res = await requestServiceAction({ type, note });
-    if (!res.ok) setNotice(res.error);
-    else {
-      setToast("Request sent — a waiter will be with you");
+    if (!res.ok) {
+      if (res.code === "SESSION_ENDED") {
+        setRejoin({ message: res.error, retry: "service" });
+        return;
+      }
+      setNotice(res.error);
+      return;
+    }
+    setToast("Request sent — a waiter will be with you");
+    router.refresh();
+  }
+
+  /* One-tap recovery when the table session ended under us. */
+  async function doRejoin() {
+    setRejoining(true);
+    try {
+      const j = await joinTableAction(qr);
+      if (!j.ok) {
+        setRejoin(null);
+        setNotice(j.error);
+        return;
+      }
+      setToast("Rejoined the table — you're back in");
+      const retry = rejoin?.retry ?? null;
+      setRejoin(null);
       router.refresh();
+      if (retry === "order") setReviewOpen(true); // cart is intact; they tap Send again
+      if (retry === "service") {
+        const r = await requestServiceAction({ type: "waiter" });
+        if (r.ok) setToast("Request sent — a waiter will be with you");
+        else setNotice(r.error);
+      }
+    } finally {
+      setRejoining(false);
     }
   }
+
+  // Proactive: browsing with a cookie whose session no longer matches the live
+  // one (page was open while the counter cleared the table). Detect it before
+  // the user wastes a whole cart on a dead session.
+  useEffect(() => {
+    if (!guest || initial || joinState !== "idle") return;
+    if (!rejoin) {
+      setRejoin({
+        message:
+          "This table's session has ended. The counter may have cleared the table. Rejoin to continue ordering.",
+        retry: null,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest, initial, joinState]);
 
   /* ------------------------------ joining ------------------------------ */
   if (!guest && joinState !== "idle") {
@@ -438,6 +498,27 @@ export function CustomerApp({
             </Button>
           </div>
         )}
+      </Modal>
+
+      {/* Session-ended recovery: one tap re-joins exactly like a fresh QR scan */}
+      <Modal
+        open={!!rejoin}
+        onClose={() => setRejoin(null)}
+        title="Table session ended"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted leading-relaxed">
+            {rejoin?.message}
+          </p>
+          <p className="text-sm text-ink leading-relaxed">
+            Tap below to rejoin this table&apos;s current session — it is the
+            same as scanning the QR again. Your name and cart are kept.
+          </p>
+          <Button block size="lg" onClick={doRejoin} disabled={rejoining}>
+            {rejoining ? <Spinner /> : null}
+            {rejoining ? "Rejoining…" : "Rejoin the table"}
+          </Button>
+        </div>
       </Modal>
 
       {toast ? (

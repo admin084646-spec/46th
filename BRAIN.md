@@ -581,6 +581,34 @@ server action
   counter first. Test session (order #1006 + bill chain) was fully deleted
   afterwards; **0 open sessions** remain.
 
+- **"This table can't place order right now" after a session was cleared/
+  removed (2026-10-18).** When the counter clears a table (or the session row
+  disappears — e.g. during test cleanup), the guest's `mos_guest` cookie keeps
+  pointing at the dead session. An ALREADY-OPEN guest app keeps working
+  visually (its `initial` prop is stale, not re-checked), and only the actions
+  fail — `submitOrderAction` answered with a dead-end message. Fix, three
+  parts:
+  1. `lib/action-result.ts` gained `code?: string` + `ERR_SESSION_ENDED`;
+     `submitOrderAction` and `requestServiceAction` now return it with a
+     human explanation.
+  2. `components/customer-app.tsx` reacts to that code with a **rejoin
+     recovery modal** ("Rejoin the table" runs the same `joinTableAction` a
+     fresh QR scan would, keeps the guest's name, then reopens the Review
+     sheet with the cart intact or re-sends the service request). There is
+     also a **proactive** detection: `guest && !initial` while idle (cookie
+     no longer matches the live session) opens the same dialog before the
+     user wastes a cart.
+  3. `joinTableAction` no longer renames a guest whose cookie references a
+     stale session on the SAME table — the old label is kept (`keepLabel`).
+  Proven headless: kill the session behind an open app → Send → modal appears
+  (no dead end) → Rejoin → Review sheet reopens with "2 items · ₹230" → Send
+  → toast + order **#1007 `pending` ₹230** in the NEW session; pickup view
+  shows Round 1 + the explainer banner. Residue deleted afterwards;
+  **0 open sessions anywhere**.
+  NOTE: rejoin must stay a user-tapped action, never automatic inside
+  `submitOrderAction` — a silent rejoin could attach a stray order to another
+  party's fresh session on the same table.
+
 - **Design refresh (2026-10-18, "flat/boring UI" request).** Central levers only
   — the component structure is untouched: `app/globals.css` adds warm elevation
   shadow tokens (`shadow-card/lift/pop/sheet`), the `.brand-band` gradient

@@ -6,7 +6,7 @@ import { nextRoundNo } from "@/lib/business";
 import { writeAudit, pushNotification } from "@/lib/audit";
 import { signal } from "@/lib/signal";
 import { sessionTopic } from "@/lib/topics";
-import { ok, err, type ActionResult } from "@/lib/action-result";
+import { ok, err, ERR_SESSION_ENDED, type ActionResult } from "@/lib/action-result";
 import type { MenuItem, TableSession } from "@/lib/types";
 
 export interface CartLine {
@@ -31,7 +31,13 @@ export async function submitOrderAction(input: {
     .maybeSingle();
   const session = sessionRow as TableSession | null;
   if (!session || session.status !== "active") {
-    return err("This table can't take new orders right now.");
+    // The cookie references a session that was cleared (or removed) at the
+    // counter. Give the client a machine-readable code so it can offer a
+    // one-tap rejoin instead of a dead end.
+    return err(
+      "Your table session has ended (the counter may have cleared the table).",
+      ERR_SESSION_ENDED
+    );
   }
 
   const clean = (input.items ?? []).filter((l) => l.qty > 0 && l.menu_item_id);
@@ -130,10 +136,15 @@ export async function requestServiceAction(input: {
 
   const { data: sessionRow } = await db
     .from("table_sessions")
-    .select("status")
+    .select("id, status")
     .eq("id", guest.sessionId)
     .maybeSingle();
-  if (!sessionRow) return err("This table is no longer active.");
+  if (!sessionRow || sessionRow.status !== "active") {
+    return err(
+      "Your table session has ended — rejoin to send requests.",
+      ERR_SESSION_ENDED
+    );
+  }
 
   const { error } = await db.from("service_requests").insert({
     session_id: guest.sessionId,

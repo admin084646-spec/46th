@@ -43,11 +43,15 @@ export async function joinTableAction(
     });
   }
 
+  // Stale cookie from an earlier session on the SAME table: keep the guest's
+  // chosen name so a rejoin after counter clearance doesn't rename them.
+  const keepLabel =
+    existing && existing.tableId === table.id ? existing.label : null;
   const guest = {
     sessionId: session.id,
     tableId: table.id,
     tableLabel: table.label,
-    label: `Guest ${randomCode()}`,
+    label: keepLabel ?? `Guest ${randomCode()}`,
   };
   await setGuestCookie(guest);
   await signal(["role:admin", sessionTopic(session.id)], "refresh", {
