@@ -20,7 +20,7 @@ interface Row {
 }
 
 export function TableBoard({ rows }: { rows: Row[] }) {
-  useLive(["role:admin"], 8000);
+  useLive(["role:admin"], 25000);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">

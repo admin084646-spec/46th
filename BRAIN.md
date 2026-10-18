@@ -630,6 +630,50 @@ server action
 - Windows firewall may prompt on first LAN access — allow **Private** networks so
   phones can reach the dev server.
 
+### Free-tier scaling traps (2026-10-18 capacity audit)
+
+- **Unbounded `select("*")` on every poll was the hidden egress bomb.**
+  `getSessionWorkspace` fetched `kitchen_tickets` and `bill_splits` wholesale
+  (no filter) and filtered in JS — and pages re-render on every poll/signal.
+  At the shop's volume (≈450 orders/day) `kitchen_tickets` grows ≈450 rows/
+  day, so after a month EVERY guest poll would have shipped ≈5 MB from the
+  DB → the 5 GB/month free egress was blown in days. Now both queries filter
+  server-side (`.in("order_id", orderIds)` / `.eq("bill_id", billId)`);
+  `getTableBoard` no longer includes terminal `picked_up` tickets; owner's
+  outstanding report reads only unpaid bills. **Never fetch a whole table and
+  filter in JS on a hot path — filter server-side first.**
+- **`router.refresh()` refetches EVERYTHING the page queried — including the
+  51-item menu.** `getMenu()` is now cached in-process (`lib/business.ts`,
+  60 s TTL, `invalidateMenuCache()` called by menu write actions). Menu bytes
+  ≈0 on poll renders; stay within the TTL when claiming "menu edits appear
+  instantly".
+- **Polling intervals were 6-12 s per screen.** Realtime broadcast signals
+  already deliver instant updates; the poll is only a safety net. Intervals
+  are now: guest 60 s, staff 20-30 s, menu screen 90 s — and **visibility-
+  gated** in `useLive` (hidden tab/pocket phone never polls; refresh fires on
+  return). Do not "fix" a stale screen by shortening these intervals — check
+  the broadcast signal first.
+- **`notifications` was a write-only table** — inserted on every order/
+  payment/approve, but `getNotifications` was never called by any UI. The
+  feature was removed (function + 6 call sites); rows are drained by
+  retention. Don't reintroduce notification writes without a reader.
+- **`lib/retention.ts` (`maybePrune`)** runs at most every 6 h, piggybacking
+  on staff page renders: notifications >7 d, audit_log >90 d, kitchen tickets
+  >60 d, order_items of sessions closed >45 d. **Money tables (sessions,
+  orders, bills, payments, discounts) are NEVER pruned.** Trade-off accepted
+  with the user: "popular items" in owner reports is exact only within
+  retention; rupee totals are always exact (computed from orders/bills).
+  `audit_log.id` is **bigserial**, not uuid — bulk-delete filters must not
+  compare it to a uuid (a uuid `.neq("id", …)` fails silently; use `.gt("id", 0)`).
+
+### Environment quirks
+
+- PGlite (used to verify the SQL) lacks `pgcrypto`; the harness strips only
+  `create extension if not exists pgcrypto;`. Supabase ships `pgcrypto`, and
+  `gen_random_uuid()` is core PG13+, so the statement is harmless on Supabase.
+- Windows firewall may prompt on first LAN access — allow **Private** networks so
+  phones can reach the dev server.
+
 ---
 
 ## 14. Verification status
@@ -735,6 +779,29 @@ server action
     mobile contexts.
   - Screenshots (for reference): `%TEMP%\opencode\ui-*.png`.
 
+- **2026-10-18 capacity/efficiency pass** `[VERIFIED]` against a fresh
+  production build (`tsc` 0, `pnpm build` 0, `pnpm start -H 0.0.0.0 -p 3000`),
+  real headless Chromium + service-role DB probes. Measured first: row sizes
+  (orders 540 B, order_items 248 B, kitchen_tickets 393 B, bills 328 B,
+  payments 378 B, audit 296 B), real `useLive` intervals, and the real
+  poll-then-render path — findings and fixes in §13 "Free-tier scaling traps".
+  - **E2e after the refactor**: guest joins → 2 items ₹230 → Review → Send →
+    order **#1012 pending** in DB → staff logs in via the JS-free `/api/login`
+    POST (pin 000002) → `/admin` → Approve → **#1012 approved** with kitchen
+    ticket **#2007 approved (Table 1)**; guest Orders tab shows Round 1; guest
+    login/approve Screens: `opt-admin*.png`, `opt-guest-orders.png`; **0 page
+    errors**.
+  - **notification pulse**: submit+approve no longer write notifications; all
+    23 remaining rows drained → `notifications = 0`.
+  - **Full database reset to launch state**: every transactional table
+    (`table_sessions`, `orders`, `order_items`, `kitchen_tickets`, bills/
+    payments/splits/service_requests, `notifications`, `audit_log`) wiped
+    after measuring — **0 open sessions, 0 rows**, seed intact (menu 51,
+    tables 10, staff 6). Owner reports start from today.
+  - Complexity note: guest render queries are now O(own session) instead of
+    O(entire universe); egress and DB growth estimates for the shop's volume
+    are in the final report of that session.
+
 **What has NOT been verified** — do not claim otherwise
 
 - ❌ **No automated tests exist.** There is no unit/integration/e2e suite.
@@ -761,6 +828,7 @@ server action
 | Bottom-nav responsiveness | **2026-10-18** — optimistic tap highlight (10 ms) + per-workspace `loading.tsx` skeletons + `touch-action: manipulation`; verified in headless Chromium |
 | UI design | **2026-10-18** — brand gradient bands on all headers, frosted bottom bars with active pills, warm elevation shadows, refreshed landing/login heroes with the green Shudh mark; structure/tokens preserved, modal portal kept |
 | Version control | **2026-10-18** — local repo recreated inside the project (the drive `C:\` was previously a zero-commit repo); pushed to `github.com/admin084646-spec/46th` `main` (`2924f1d`), `.env.local` never committed |
+| Free-tier efficiency | **2026-10-18** — unbounded poll-time queries fixed (server-side filters), 60 s menu cache, visibility-gated polling (guest 60 s / staff 20-30 s), write-only `notifications` feature removed, `lib/retention.ts` auto-prunes junk every 6 h (money tables never); DB wiped to **0 transactional rows** — owner reports count from today |
 | Blocker | **None** — mobile login fixed and verified; guest join verified in a real browser |
 | Outstanding risk | Zero automated tests; still no real-device (phone camera) verification |
 

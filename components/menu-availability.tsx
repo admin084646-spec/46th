@@ -17,7 +17,7 @@ export function MenuAvailability({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
-  useLive(["role:admin"], 12000);
+  useLive(["role:admin"], 90000);
 
   async function toggle(item: MenuItem) {
     setBusy(item.id);

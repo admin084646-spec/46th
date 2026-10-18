@@ -3,8 +3,8 @@
 import { guard } from "@/lib/guard";
 import { can } from "@/lib/perms";
 import { adminDb } from "@/lib/supabase";
-import { recomputeBill } from "@/lib/business";
-import { writeAudit, pushNotification } from "@/lib/audit";
+import { recomputeBill, invalidateMenuCache } from "@/lib/business";
+import { writeAudit } from "@/lib/audit";
 import { signal } from "@/lib/signal";
 import { roleTopic, sessionTopic, MENU_TOPIC } from "@/lib/topics";
 import { ok, err, type ActionResult } from "@/lib/action-result";
@@ -95,12 +95,6 @@ export async function approveOrderAction(
     entity: "order",
     entityId: orderId,
     after: { status: "approved" },
-  });
-  await pushNotification({
-    role: "kitchen",
-    type: "ticket_new",
-    title: `${ctx.table?.label ?? "Table"} · new ticket #${ctx.order.order_no}`,
-    payload: { orderId, tableLabel: ctx.table?.label },
   });
   await signal(
     [
@@ -329,6 +323,7 @@ export async function setItemAvailabilityAction(
     .from("menu_items")
     .update({ is_available: available })
     .eq("id", menuItemId);
+  invalidateMenuCache();
 
   await writeAudit({
     actorStaffId: g.staff.id,

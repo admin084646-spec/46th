@@ -17,7 +17,7 @@ export function Approvals({ rows }: { rows: PendingOrderRow[] }) {
   const [rejecting, setRejecting] = useState<PendingOrderRow | null>(null);
   const [reason, setReason] = useState("");
 
-  useLive(["role:admin"], 7000);
+  useLive(["role:admin"], 30000);
 
   async function approve(row: PendingOrderRow) {
     setBusy(row.order.id);

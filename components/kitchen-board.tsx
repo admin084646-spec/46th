@@ -29,7 +29,7 @@ export function KitchenBoard({ rows }: { rows: KitchenRow[] }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useLive(["role:kitchen"], 6000);
+  useLive(["role:kitchen"], 25000);
 
   async function act(
     tag: string,

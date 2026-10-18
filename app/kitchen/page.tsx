@@ -1,5 +1,6 @@
 import { pageKitchen } from "@/lib/guard";
 import { getKitchenTickets } from "@/lib/queries";
+import { maybePrune } from "@/lib/retention";
 import { StaffHeader } from "@/components/staff-header";
 import { StaffNav } from "@/components/staff-nav";
 import { KitchenBoard } from "@/components/kitchen-board";
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function KitchenPage() {
   const staff = await pageKitchen();
-  const rows = await getKitchenTickets(["approved", "preparing", "ready"]);
+  const [rows] = await Promise.all([
+    getKitchenTickets(["approved", "preparing", "ready"]),
+    maybePrune(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 flex flex-col pb-24">

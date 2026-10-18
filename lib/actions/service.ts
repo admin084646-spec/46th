@@ -4,7 +4,7 @@ import { guard } from "@/lib/guard";
 import { can } from "@/lib/perms";
 import { adminDb } from "@/lib/supabase";
 import { nextRoundNo, recomputeBill } from "@/lib/business";
-import { writeAudit, pushNotification } from "@/lib/audit";
+import { writeAudit } from "@/lib/audit";
 import { signal } from "@/lib/signal";
 import { roleTopic, sessionTopic } from "@/lib/topics";
 import { ok, err, type ActionResult } from "@/lib/action-result";
@@ -63,15 +63,6 @@ export async function setTicketStatusAction(
     entityId: ticketId,
     after: { status },
   });
-
-  if (status === "ready") {
-    await pushNotification({
-      role: "waiter",
-      type: "ticket_ready",
-      title: `${ticket.table_label} · order #${ticket.ticket_no} ready for pickup`,
-      payload: { ticketId, tableLabel: ticket.table_label },
-    });
-  }
 
   await signal(
     [
@@ -190,12 +181,6 @@ export async function addExtraItemsAction(
     entity: "order",
     entityId: order.id,
     after: { items: clean.length, total },
-  });
-  await pushNotification({
-    role: "kitchen",
-    type: "ticket_new",
-    title: `${tableLabel} · waiter added items (order #${(order as Order).order_no})`,
-    payload: { orderId: order.id },
   });
   await signal(
     [roleTopic("kitchen"), roleTopic("waiter"), roleTopic("admin"), sessionTopic(session.id)],

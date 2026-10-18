@@ -46,7 +46,8 @@ export async function getRangeSummary(
         .gte("created_at", from)
         .lt("created_at", to),
       db.from("discounts").select("*").gte("created_at", from).lt("created_at", to),
-      db.from("bills").select("*"),
+      // Only unpaid bills are ever used here — don't ship the whole ledger.
+      db.from("bills").select("*").neq("status", "paid"),
     ]);
 
   const orderList = (orders as Order[]) ?? [];

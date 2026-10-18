@@ -49,7 +49,7 @@ export function WaiterBoard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useLive(["role:waiter", "role:kitchen"], 6000);
+  useLive(["role:waiter", "role:kitchen"], 20000);
 
   async function act(
     tag: string,

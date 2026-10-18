@@ -17,6 +17,23 @@ import type {
 
 const LIVE = ["active", "awaiting_clearance"] as const;
 
+/* --------------------------- menu cache --------------------------------- */
+
+/* The menu is read on EVERY guest page render — including each phone's poll
+   cycle — but changes a few times a month at most. Cache it in-process for a
+   short window; menu write actions call invalidateMenuCache() so edits still
+   appear instantly. On the free tier this alone removes the single biggest
+   recurring query payload. */
+let menuCache: {
+  at: number;
+  data: { categories: Category[]; items: MenuItem[] };
+} | null = null;
+const MENU_TTL_MS = 60_000;
+
+export function invalidateMenuCache(): void {
+  menuCache = null;
+}
+
 /* --------------------------- lookups ----------------------------------- */
 
 export async function getTableByToken(
@@ -42,15 +59,22 @@ export async function getMenu(): Promise<{
   categories: Category[];
   items: MenuItem[];
 }> {
+  if (menuCache && Date.now() - menuCache.at < MENU_TTL_MS) {
+    return menuCache.data;
+  }
   const db = adminDb();
   const [{ data: categories }, { data: items }] = await Promise.all([
     db.from("menu_categories").select("*").order("sort"),
     db.from("menu_items").select("*").order("sort"),
   ]);
-  return {
-    categories: (categories as Category[]) ?? [],
-    items: (items as MenuItem[]) ?? [],
+  menuCache = {
+    at: Date.now(),
+    data: {
+      categories: (categories as Category[]) ?? [],
+      items: (items as MenuItem[]) ?? [],
+    },
   };
+  return menuCache.data;
 }
 
 /* --------------------------- sessions ---------------------------------- */
@@ -224,7 +248,7 @@ export async function getSessionWorkspace(
     .maybeSingle();
   const s = (session as TableSession) ?? null;
 
-  const [table, bill, orders, tickets, requests, splits] = await Promise.all([
+  const [table, bill, orders, requests] = await Promise.all([
     s
       ? db.from("dining_tables").select("*").eq("id", s.table_id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -234,21 +258,26 @@ export async function getSessionWorkspace(
       .select("*")
       .eq("session_id", sessionId)
       .order("created_at"),
-    db.from("kitchen_tickets").select("*"),
     db
       .from("service_requests")
       .select("*")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false }),
-    db.from("bill_splits").select("*"),
   ]);
 
   const orderIds = ((orders.data as Order[]) ?? []).map((o) => o.id);
   const billId = (bill.data as Bill | null)?.id ?? null;
 
-  const [items, payments, discounts] = await Promise.all([
+  /*_tickets/splits are filtered SERVER-SIDE, not fetched wholesale and
+    filtered in JS — an unfiltered select("*") here shipped the entire table
+    to the server on every page render/poll and would have blown the free
+    tier's egress within days of real traffic. */
+  const [items, tickets, payments, discounts, splits] = await Promise.all([
     orderIds.length
       ? db.from("order_items").select("*").in("order_id", orderIds).order("item_name")
+      : Promise.resolve({ data: [] }),
+    orderIds.length
+      ? db.from("kitchen_tickets").select("*").in("order_id", orderIds)
       : Promise.resolve({ data: [] }),
     billId
       ? db.from("payments").select("*").eq("bill_id", billId).order("created_at")
@@ -256,14 +285,10 @@ export async function getSessionWorkspace(
     billId
       ? db.from("discounts").select("*").eq("bill_id", billId).order("created_at")
       : Promise.resolve({ data: [] }),
+    billId
+      ? db.from("bill_splits").select("*").eq("bill_id", billId)
+      : Promise.resolve({ data: [] }),
   ]);
-
-  const allTickets = ((tickets.data as KitchenTicket[]) ?? []).filter((t) =>
-    orderIds.includes(t.order_id)
-  );
-  const allSplits = ((splits.data as BillSplit[]) ?? []).filter(
-    (sp) => sp.bill_id === billId
-  );
 
   return {
     session: s,
@@ -271,9 +296,9 @@ export async function getSessionWorkspace(
     bill: (bill.data as Bill) ?? null,
     orders: (orders.data as Order[]) ?? [],
     items: (items.data as OrderItem[]) ?? [],
-    tickets: allTickets,
+    tickets: (tickets.data as KitchenTicket[]) ?? [],
     requests: (requests.data as ServiceRequest[]) ?? [],
-    splits: allSplits,
+    splits: (splits.data as BillSplit[]) ?? [],
     payments: (payments.data as Payment[]) ?? [],
     discounts: (discounts.data as Discount[]) ?? [],
   };
@@ -315,7 +340,9 @@ export async function getTableBoard(): Promise<TableBoardRow[]> {
     db
       .from("kitchen_tickets")
       .select("id,order_id,status")
-      .in("status", ["approved", "preparing", "ready", "picked_up"]),
+      // "picked_up" is terminal and accumulates forever — active boards only
+      // need live tickets, so the query must not grow with history.
+      .in("status", ["approved", "preparing", "ready"]),
     sessionIds.length
       ? db
           .from("service_requests")

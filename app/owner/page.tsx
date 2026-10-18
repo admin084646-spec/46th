@@ -5,6 +5,7 @@ import {
   getStaffPerformance,
 } from "@/lib/reports";
 import { getAuditLog } from "@/lib/queries";
+import { maybePrune } from "@/lib/retention";
 import { istDateInput } from "@/lib/format";
 import { StaffHeader } from "@/components/staff-header";
 import { StaffNav } from "@/components/staff-nav";
@@ -37,6 +38,7 @@ export default async function OwnerPage({
     getOutstandingBills(),
     getStaffPerformance(from, to),
     getAuditLog(60),
+    maybePrune(),
   ]);
 
   const rangeLabel = from === to ? `For ${from}` : `${from} → ${to}`;

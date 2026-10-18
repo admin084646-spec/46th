@@ -1,7 +1,6 @@
 import "server-only";
 import { adminDb } from "./supabase";
 import type {
-  AppNotification,
   AuditEntry,
   KitchenTicket,
   Order,
@@ -75,7 +74,7 @@ export async function getOpenServiceRequests(): Promise<ServiceRequest[]> {
   return (data as ServiceRequest[]) ?? [];
 }
 
-/* --------------------------- audit & notifications --------------------------- */
+/* --------------------------- audit --------------------------- */
 
 export async function getAuditLog(limit = 200): Promise<AuditEntry[]> {
   const { data } = await adminDb()
@@ -84,19 +83,6 @@ export async function getAuditLog(limit = 200): Promise<AuditEntry[]> {
     .order("created_at", { ascending: false })
     .limit(limit);
   return (data as AuditEntry[]) ?? [];
-}
-
-export async function getNotifications(
-  role: Role,
-  limit = 30
-): Promise<AppNotification[]> {
-  const { data } = await adminDb()
-    .from("notifications")
-    .select("*")
-    .eq("audience_role", role)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  return (data as AppNotification[]) ?? [];
 }
 
 /* --------------------------- audit search --------------------------- */

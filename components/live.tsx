@@ -20,6 +20,10 @@ function getClient(): SupabaseClient {
  * Subscribe to realtime refresh signals for a set of topics, and poll as a
  * safety net. On any signal the current route refetches authoritative,
  * permission-checked server data.
+ *
+ * Polling is visibility-gated: a phone lying on the table in someone's pocket
+ * (page hidden) must not burn server/DB cycles every few seconds. When the
+ * tab becomes visible again it refreshes immediately.
  */
 export function useLive(topics: string[], intervalMs = 8000, enabled = true) {
   const router = useRouter();
@@ -38,10 +42,16 @@ export function useLive(topics: string[], intervalMs = 8000, enabled = true) {
           .subscribe()
       );
 
+    const tick = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
     const timer =
-      intervalMs > 0
-        ? window.setInterval(() => router.refresh(), intervalMs)
-        : 0;
+      intervalMs > 0 ? window.setInterval(tick, intervalMs) : 0;
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     return () => {
       for (const ch of channels) {
@@ -52,6 +62,7 @@ export function useLive(topics: string[], intervalMs = 8000, enabled = true) {
         }
       }
       if (timer) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [key, intervalMs, enabled, router]);
 }

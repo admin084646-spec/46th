@@ -4,7 +4,7 @@ import { guard } from "@/lib/guard";
 import { can } from "@/lib/perms";
 import { adminDb } from "@/lib/supabase";
 import { ensureBill, recomputeBill } from "@/lib/business";
-import { writeAudit, pushNotification } from "@/lib/audit";
+import { writeAudit } from "@/lib/audit";
 import { signal } from "@/lib/signal";
 import { roleTopic, sessionTopic } from "@/lib/topics";
 import { ok, err, type ActionResult } from "@/lib/action-result";
@@ -124,16 +124,6 @@ export async function addPaymentAction(
     entityId: billId,
     after: { amount_minor: amountMinor, method, verified: isCash },
   });
-  if (!isCash) {
-    await pushNotification({
-      role: "admin",
-      type: "payment_pending",
-      title: `${method.toUpperCase()} payment of ₹${(amountMinor / 100).toFixed(
-        2
-      )} awaiting verification`,
-      payload: { billId },
-    });
-  }
   return ok();
 }
 
@@ -429,13 +419,6 @@ export async function clearTableAction(
     })
     .eq("id", sessionId);
 
-  const { data: tableRow } = await db
-    .from("dining_tables")
-    .select("label")
-    .eq("id", session.table_id)
-    .maybeSingle();
-  const tableLabel = (tableRow as { label: string } | null)?.label ?? "Table";
-
   await writeAudit({
     actorStaffId: g.staff.id,
     actorName: g.staff.name,
@@ -451,12 +434,6 @@ export async function clearTableAction(
     "refresh",
     { reason: "table_cleared" }
   );
-  await pushNotification({
-    role: "admin",
-    type: "table_cleared",
-    title: `${tableLabel} cleared by ${g.staff.name}`,
-    payload: { sessionId },
-  });
   return ok();
 }
 

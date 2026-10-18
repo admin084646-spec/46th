@@ -91,7 +91,7 @@ export function CustomerApp({
   const sessionId = guest?.sessionId ?? initial?.sessionId ?? null;
   useLive(
     [sessionId ? sessionTopic(sessionId) : "", MENU_TOPIC].filter(Boolean),
-    9000
+    60000
   );
 
   // Join on first load (no cookie yet). This must never spin forever: if the

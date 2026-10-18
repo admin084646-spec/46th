@@ -3,7 +3,7 @@
 import { getGuestSession } from "@/lib/auth";
 import { adminDb } from "@/lib/supabase";
 import { nextRoundNo } from "@/lib/business";
-import { writeAudit, pushNotification } from "@/lib/audit";
+import { writeAudit } from "@/lib/audit";
 import { signal } from "@/lib/signal";
 import { sessionTopic } from "@/lib/topics";
 import { ok, err, ERR_SESSION_ENDED, type ActionResult } from "@/lib/action-result";
@@ -113,12 +113,6 @@ export async function submitOrderAction(input: {
     entityId: order.id,
     after: { round, total, items: clean.length },
   });
-  await pushNotification({
-    role: "admin",
-    type: "order_pending",
-    title: `${guest.tableLabel} · Order #${order.order_no} awaiting approval`,
-    payload: { orderId: order.id, tableLabel: guest.tableLabel },
-  });
   await signal(["role:admin", sessionTopic(session.id)], "refresh", {
     reason: "order_submitted",
   });
@@ -155,18 +149,6 @@ export async function requestServiceAction(input: {
   });
   if (error) return err("Could not send your request. Please try again.");
 
-  const titles: Record<string, string> = {
-    waiter: "Calling a waiter",
-    bill: "Bill requested",
-    water: "Water / cutlery requested",
-    custom: "Custom request",
-  };
-  await pushNotification({
-    role: "waiter",
-    type: "service_request",
-    title: `${guest.tableLabel} · ${titles[input.type] ?? "Request"}`,
-    payload: { sessionId: guest.sessionId },
-  });
   await signal(["role:waiter", sessionTopic(guest.sessionId)], "refresh", {
     reason: "service_request",
   });

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { pageAdmin } from "@/lib/guard";
 import { getOpenServiceRequests, getPendingOrders } from "@/lib/queries";
 import { getTableBoard } from "@/lib/business";
+import { maybePrune } from "@/lib/retention";
 import { StaffHeader } from "@/components/staff-header";
 import { StaffNav } from "@/components/staff-nav";
 import { Approvals } from "@/components/approvals";
@@ -17,6 +18,7 @@ export default async function AdminPage() {
     getPendingOrders(),
     getOpenServiceRequests(),
     getTableBoard(),
+    maybePrune(),
   ]);
 
   const occupied = board.filter((b) => b.session);

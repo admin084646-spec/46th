@@ -70,7 +70,7 @@ export function BillingScreen({ w }: { w: BillingWorkspace }) {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  useLive(["role:admin", sessionTopic(w.session.id)], 7000);
+  useLive(["role:admin", sessionTopic(w.session.id)], 20000);
 
   const itemsByOrder = useMemo(() => {
     const m = new Map<string, OrderItem[]>();

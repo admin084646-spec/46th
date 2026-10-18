@@ -24,7 +24,7 @@ export function ServiceRequests({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useLive(["role:waiter", "role:admin"], 7000);
+  useLive(["role:waiter", "role:admin"], 20000);
 
   async function run(id: string, fn: (id: string) => Promise<{ ok: boolean; error?: string }>) {
     setBusy(id);

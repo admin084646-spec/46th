@@ -1,6 +1,7 @@
 import { pageWaiter } from "@/lib/guard";
 import { getOpenServiceRequests, getWaiterTickets } from "@/lib/queries";
 import { getMenu, getTableBoard } from "@/lib/business";
+import { maybePrune } from "@/lib/retention";
 import { StaffHeader } from "@/components/staff-header";
 import { StaffNav } from "@/components/staff-nav";
 import { WaiterBoard } from "@/components/waiter-board";
@@ -14,6 +15,7 @@ export default async function WaiterPage() {
     getOpenServiceRequests(),
     getTableBoard(),
     getMenu(),
+    maybePrune(),
   ]);
 
   const sessions = board

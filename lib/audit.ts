@@ -1,6 +1,5 @@
 import "server-only";
 import { adminDb } from "./supabase";
-import type { Role } from "./types";
 
 export interface AuditInput {
   actorStaffId?: string | null;
@@ -27,27 +26,5 @@ export async function writeAudit(entry: AuditInput): Promise<void> {
     });
   } catch {
     /* auditing must never break the main action */
-  }
-}
-
-export interface NotifyInput {
-  role?: Role;
-  staffId?: string;
-  type: string;
-  title: string;
-  payload?: unknown;
-}
-
-export async function pushNotification(n: NotifyInput): Promise<void> {
-  try {
-    await adminDb().from("notifications").insert({
-      audience_role: n.role ?? null,
-      audience_staff: n.staffId ?? null,
-      type: n.type,
-      title: n.title,
-      payload: n.payload ?? null,
-    });
-  } catch {
-    /* notifications are best-effort */
   }
 }
